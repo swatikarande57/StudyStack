@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>client</title>
+  </head>
+  <body>
+    <script>
+      console.log('App initialization started');
+      window.onerror = function(msg, url, line, col, error) {
+        console.error('JS ERROR:', msg, url, line, col, error);
+        document.body.innerHTML = '<div style="background: #1e293b; color: #ef4444; padding: 2rem; font-family: sans-serif;"><h1>Oops! App Crash</h1><p>' + msg + '</p></div>';
+        return false;
+      };
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
