@@ -25,9 +25,9 @@ services:
       - key: EMAIL_PASS
         sync: false
 
+staticSites:
   # Frontend Static Site
-  - type: static_site
-    name: study-stack-client-87
+  - name: study-stack-client-87
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: dist
