@@ -23,6 +23,16 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/auth', authRoutes);
 
+app.get('/api/health', async (req, res) => {
+    try {
+        const { data, error } = await supabase.from('profiles').select('count').limit(1);
+        if (error) throw error;
+        res.json({ status: 'ok', database: 'connected', timestamp: new Date() });
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message, timestamp: new Date() });
+    }
+});
+
 app.get('/', (req, res) => {
     res.send('Study-Stack API is running...');
 });
