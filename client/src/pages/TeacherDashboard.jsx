@@ -1,25 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, AlertTriangle, TrendingDown, CheckCircle2, MoreHorizontal, Mail } from 'lucide-react';
+import { Users, AlertTriangle, TrendingDown, CheckCircle2, MoreHorizontal, Mail, Clock } from 'lucide-react';
 import { CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../context/AuthContext';
-import { assignPracticeTasks, fetchTeacherInsights, sendReminder } from '../services/dashboardService';
+import { assignPracticeTasks, fetchTeacherInsights, sendReminder, fetchTasks } from '../services/dashboardService';
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile } = useAuth();
+  const [tasks, setTasks] = useState([]);
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { profile } = useAuth();
 
   const loadInsights = async () => {
     if (!profile?.id) return;
     try {
-      const data = await fetchTeacherInsights(profile.id);
+      const [data, taskData] = await Promise.all([
+        fetchTeacherInsights(profile.id),
+        fetchTasks({ userId: profile.id, role: 'teacher' })
+      ]);
       
-      // Teacher filtering now happens securely on the backend via getTeacherInsights
       setInsights(data);
-      setInsights(data);
+      setTasks(taskData);
     } finally {
       setLoading(false);
     }
@@ -82,13 +85,13 @@ const TeacherDashboard = () => {
             <CheckCircle2 size={24} />
           </div>
         </div>
-        <div className="glass-card flex items-center justify-between border-red-500/30">
+        <div className="glass-card flex items-center justify-between border-blue-500/30 cursor-pointer hover:bg-white/5 transition-all" onClick={() => navigate('/teacher/tasks')}>
           <div>
-            <p className="text-gray-400 text-sm">Students At Risk</p>
-            <p className="text-3xl font-bold mt-1 text-red-500">{insights?.atRiskStudents?.length ?? 0}</p>
+            <p className="text-gray-400 text-sm">Pending Reviews</p>
+            <p className="text-3xl font-bold mt-1 text-blue-400">{tasks.filter(t => t.status === 'submitted').length}</p>
           </div>
-          <div className="p-4 rounded-2xl bg-red-500/10 text-red-500">
-            <AlertTriangle size={24} />
+          <div className="p-4 rounded-2xl bg-blue-500/10 text-blue-400">
+            <Clock size={24} />
           </div>
         </div>
       </div>

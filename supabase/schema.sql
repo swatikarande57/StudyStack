@@ -22,7 +22,9 @@ create table if not exists public.tasks (
   assigned_by uuid not null references public.profiles(id) on delete cascade,
   assigned_to uuid not null references public.profiles(id) on delete cascade,
   subject text default 'General',
-  status text not null check (status in ('pending', 'in_progress', 'completed')) default 'pending',
+  status text not null check (status in ('pending', 'submitted', 'completed', 'rejected')) default 'pending',
+  proof_link text,
+  rejection_reason text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

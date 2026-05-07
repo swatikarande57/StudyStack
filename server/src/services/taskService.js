@@ -30,6 +30,7 @@ export async function createTask(payload) {
     assigned_to: payload.assigned_to,
     status: payload.status ?? 'pending',
     subject: payload.subject ?? 'General',
+    proof_link: payload.proof_link ?? null,
     created_at: now(),
   };
 

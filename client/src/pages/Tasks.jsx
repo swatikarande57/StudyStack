@@ -14,6 +14,7 @@ const Tasks = ({ isAdmin = false }) => {
   const [teacherStudents, setTeacherStudents] = useState([]);
   const [proofInputId, setProofInputId] = useState(null);
   const [proofLink, setProofLink] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
 
   async function loadTasks() {
     if (!user?.id) {
@@ -65,12 +66,12 @@ const Tasks = ({ isAdmin = false }) => {
   const toggleTaskStatus = async (task) => {
     if (isAdmin) return;
     try {
-      if (task.status === 'completed') {
-        // Unmark as completed
+      if (task.status === 'completed' || task.status === 'submitted') {
+        // Allow unmarking or returning to pending
         await updateTask(task.id, { status: 'pending', proof_link: null });
         loadTasks();
       } else {
-        // Trigger proof popup instead of instantly completing
+        // Trigger proof popup (for pending or rejected)
         setProofInputId(task.id);
         setProofLink('');
       }
@@ -82,18 +83,31 @@ const Tasks = ({ isAdmin = false }) => {
   const submitProof = async (taskId) => {
     if (!proofLink.trim()) return alert("Please provide a valid work link before completing!");
     try {
-      await updateTask(taskId, { status: 'completed', proof_link: proofLink });
+      await updateTask(taskId, { status: 'submitted', proof_link: proofLink });
       setProofInputId(null);
       setProofLink('');
       loadTasks();
     } catch (err) {
       console.error('Error submitting proof:', err);
+      alert('Error: ' + err.message);
+    }
+  };
+
+  const updateTaskStatus = async (taskId, newStatus, extraData = {}) => {
+    try {
+      await updateTask(taskId, { status: newStatus, ...extraData });
+      loadTasks();
+    } catch (err) {
+      console.error('Error updating task status:', err);
+      alert('Error: ' + err.message);
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'submitted': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+      case 'rejected': return 'bg-red-500/10 text-red-500 border-red-500/20';
       case 'pending': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
       default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
     }
@@ -101,13 +115,18 @@ const Tasks = ({ isAdmin = false }) => {
 
   const filteredTasks = tasks.filter((task) => {
     const term = search.trim().toLowerCase();
-    if (!term) return true;
-    return (
+    const matchesSearch = !term || (
       task.title?.toLowerCase().includes(term) ||
       task.description?.toLowerCase().includes(term) ||
       task.subject?.toLowerCase().includes(term)
     );
+    
+    const matchesFilter = filterStatus === 'all' || task.status === filterStatus;
+    
+    return matchesSearch && matchesFilter;
   });
+
+  const getStatusCount = (status) => tasks.filter(t => t.status === status).length;
 
   return (
     <div className="space-y-6">
@@ -126,7 +145,7 @@ const Tasks = ({ isAdmin = false }) => {
         )}
       </header>
 
-      <div className="flex gap-4 mb-4">
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div className="flex-1 glass p-2 flex items-center gap-2 rounded-xl">
           <Search size={18} className="text-gray-500 ml-2" />
           <input
@@ -137,12 +156,45 @@ const Tasks = ({ isAdmin = false }) => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        
+        <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto no-scrollbar">
+          {['all', 'pending', 'submitted', 'completed', 'rejected'].map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${filterStatus === s ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+            >
+              {s.charAt(0).toUpperCase() + s.slice(1)} ({s === 'all' ? tasks.length : getStatusCount(s)})
+            </button>
+          ))}
+        </div>
       </div>
+
+      {!isAdmin && tasks.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="glass-card p-3 border-l-4 border-yellow-500">
+            <p className="text-[10px] uppercase text-gray-500 font-bold">Pending</p>
+            <p className="text-xl font-black">{getStatusCount('pending')}</p>
+          </div>
+          <div className="glass-card p-3 border-l-4 border-blue-400">
+            <p className="text-[10px] uppercase text-gray-500 font-bold">In Review</p>
+            <p className="text-xl font-black">{getStatusCount('submitted')}</p>
+          </div>
+          <div className="glass-card p-3 border-l-4 border-green-500">
+            <p className="text-[10px] uppercase text-gray-500 font-bold">Completed</p>
+            <p className="text-xl font-black">{getStatusCount('completed')}</p>
+          </div>
+          <div className="glass-card p-3 border-l-4 border-red-500">
+            <p className="text-[10px] uppercase text-gray-500 font-bold">Rejected</p>
+            <p className="text-xl font-black text-red-500">{getStatusCount('rejected')}</p>
+          </div>
+        </div>
+      )}
 
       {isAdmin && showAddForm && (
         <form onSubmit={handleAddTask} className="glass-card grid grid-cols-1 md:grid-cols-2 gap-3">
           <input className="bg-white/5 border border-white/10 rounded-lg px-3 py-2" placeholder="Task title" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} required />
-          <input type="date" className="bg-white/5 border border-white/10 rounded-lg px-3 py-2" value={newTask.deadline} onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })} required />
+          <input type="datetime-local" className="bg-white/5 border border-white/10 rounded-lg px-3 py-2" value={newTask.deadline} onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })} required />
           <select 
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white outline-none" 
             value={newTask.assigned_to} 
@@ -182,10 +234,23 @@ const Tasks = ({ isAdmin = false }) => {
               className={`p-4 rounded-xl border transition-all flex items-start gap-4 ${task.status === 'completed' ? 'bg-primary/5 border-primary/20' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
             >
               <button onClick={() => toggleTaskStatus(task)} className={`mt-1 shrink-0 ${isAdmin ? 'cursor-default opacity-50' : 'cursor-pointer hover:scale-110 transition-transform'}`}>
-                {task.status === 'completed' ? <CheckCircle2 className="text-primary" /> : <Circle className="text-gray-500" />}
+                {task.status === 'completed' ? (
+                  <CheckCircle2 className="text-green-500" />
+                ) : task.status === 'submitted' ? (
+                  <CheckCircle2 className="text-blue-400 opacity-70" />
+                ) : task.status === 'rejected' ? (
+                  <Circle className="text-red-500" />
+                ) : (
+                  <Circle className="text-gray-500" />
+                )}
               </button>
               <div className="flex-1">
-                <h3 className={`font-bold ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>{task.title}</h3>
+                <div className="flex justify-between items-start gap-2">
+                  <h3 className={`font-bold ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>{task.title}</h3>
+                  <div className={`text-[10px] uppercase font-bold px-2 py-1 rounded-lg border ${getStatusColor(task.status)} whitespace-nowrap shadow-sm`}>
+                    {task.status}
+                  </div>
+                </div>
                 {task.description && <p className="text-sm text-gray-400 mt-1">{task.description}</p>}
                 
                 {proofInputId === task.id && (
@@ -202,12 +267,16 @@ const Tasks = ({ isAdmin = false }) => {
                   </div>
                 )}
                 
-                <div className="flex items-center gap-4 mt-4">
+                <div className="flex flex-wrap items-center gap-4 mt-4">
                   {task.deadline && (
                     <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <Calendar size={14} /> {new Date(task.deadline).toLocaleDateString()}
+                      <Calendar size={14} />
+                      {new Date(task.deadline).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                      {' · '}
+                      {new Date(task.deadline).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   )}
+
                   {isAdmin && (
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <User size={14} /> Assigned to: <span className="text-gray-300 ml-1 font-mono">{(task.assigned_to || '').substring(0, 6)}</span>
@@ -219,6 +288,28 @@ const Tasks = ({ isAdmin = false }) => {
                     </a>
                   )}
                 </div>
+
+                {isAdmin && (task.status === 'submitted' || task.status === 'completed' || task.status === 'rejected') && (
+                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
+                    <span className="text-xs text-gray-400 mr-2">Teacher Action:</span>
+                    {task.status !== 'completed' && (
+                      <button 
+                        onClick={() => updateTaskStatus(task.id, 'completed')}
+                        className="px-3 py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-500 text-xs font-bold transition-colors border border-green-500/30"
+                      >
+                        Approve
+                      </button>
+                    )}
+                    {task.status !== 'rejected' && (
+                      <button 
+                        onClick={() => updateTaskStatus(task.id, 'rejected')}
+                        className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-500 text-xs font-bold transition-colors border border-red-500/30"
+                      >
+                        Reject
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           ))

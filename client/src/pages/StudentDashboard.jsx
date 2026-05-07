@@ -129,16 +129,27 @@ const StudentDashboard = () => {
   }
 
   const completed = Array.isArray(tasks) ? tasks.filter((task) => task.status === 'completed').length : 0;
+  const submitted = Array.isArray(tasks) ? tasks.filter((task) => task.status === 'submitted').length : 0;
+  const rejected = Array.isArray(tasks) ? tasks.filter((task) => task.status === 'rejected').length : 0;
+  const pending = Array.isArray(tasks) ? tasks.filter((task) => task.status === 'pending').length : 0;
+  
   const total = Array.isArray(tasks) ? tasks.length : 0;
-  // Dynamically compute productivity: 0 tasks = 0%, otherwise % of completed tasks
+  
+  // Dynamically compute productivity: Completed / Total
   const productivityScore = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   return (
     <div className="space-y-6 md:space-y-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <StatCard title="Tasks Completed" value={`${completed} / ${total}`} icon={CheckCircle2} bgColor="bg-blue-500/20" iconColor="text-blue-400" trend={completed > 0 ? Math.round((completed/total)*100) : null} />
-        <StatCard title="Tasks Due Today" value={todayDue} icon={Clock} bgColor="bg-purple-500/20" iconColor="text-purple-400" />
-        <StatCard title="Productivity Score" value={`${productivityScore}%`} icon={TrendingUp} bgColor="bg-green-500/20" iconColor="text-green-400" />
+        <StatCard title="Approved" value={completed} icon={CheckCircle2} bgColor="bg-green-500/20" iconColor="text-green-400" />
+        <StatCard title="In Review" value={submitted} icon={Clock} bgColor="bg-blue-500/20" iconColor="text-blue-400" />
+        <StatCard title="Rejected" value={rejected} icon={AlertTriangle} bgColor="bg-red-500/20" iconColor="text-red-400" />
+        <StatCard title="Productivity" value={`${productivityScore}%`} icon={TrendingUp} bgColor="bg-primary/20" iconColor="text-primary-light" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <StatCard title="Tasks Due Today" value={todayDue} icon={Calendar} bgColor="bg-purple-500/20" iconColor="text-purple-400" />
+        <StatCard title="Pending Review" value={pending} icon={Clock} bgColor="bg-yellow-500/20" iconColor="text-yellow-400" />
         <div className="glass-card flex flex-col justify-center p-4">
                <h3 className="text-gray-400 text-[10px] md:text-xs font-semibold uppercase tracking-wider mb-2">Join Another Room</h3>
                <form onSubmit={handleJoinClass} className="flex gap-2">
@@ -233,10 +244,17 @@ const StudentDashboard = () => {
               Upcoming Deadlines
             </h3>
             <div className="space-y-4">
-              {Array.isArray(tasks) && tasks.slice(0, 3).map((item) => (
-                <div key={item.id} className="p-3 bg-white/5 rounded-xl border-l-4 border-blue-500">
-                  <h5 className="text-sm font-medium">{item.title}</h5>
-                  <p className="text-xs text-gray-500 mt-1">{item.deadline ? new Date(item.deadline).toLocaleDateString() : 'No deadline'}</p>
+              {Array.isArray(tasks) && tasks.slice(0, 4).map((item) => (
+                <div key={item.id} className={`p-3 bg-white/5 rounded-xl border-l-4 ${
+                  item.status === 'completed' ? 'border-green-500' : 
+                  item.status === 'submitted' ? 'border-blue-400' :
+                  item.status === 'rejected' ? 'border-red-500' : 'border-gray-500'
+                }`}>
+                  <div className="flex justify-between items-start">
+                    <h5 className="text-sm font-medium">{item.title}</h5>
+                    <span className="text-[10px] uppercase font-bold text-gray-500">{item.status}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">{item.deadline ? new Date(item.deadline).toLocaleDateString() : 'No deadline'}</p>
                 </div>
               ))}
             </div>
