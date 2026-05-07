@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { 
   Send, 
   Brain, 
@@ -14,7 +14,7 @@ import {
   MessageSquare,
   RefreshCcw
 } from 'lucide-react';
-import axios from 'axios';
+import { askMentor } from '../services/dashboardService';
 
 const AIMentor = () => {
   const [messages, setMessages] = useState([
@@ -45,25 +45,15 @@ const AIMentor = () => {
     setLoading(true);
 
     try {
-      // Mocking AI response for now to demonstrate UI
-      // In a real app, this would call the backend API
-      setTimeout(() => {
-        const aiResponse = { 
-          role: 'assistant', 
-          content: `Based on your current tasks and progress, here's a suggestion: Focus on your Maths assignment for 45 minutes, then take a 5-minute break. Your productivity peaks in the morning, so try to tackle difficult subjects before 11 AM!` 
-        };
-        setMessages(prev => [...prev, aiResponse]);
-        setLoading(false);
-      }, 1500);
-
-      /* Real API Call Implementation:
-      const response = await axios.post('/api/ai/mentor', {
-        messages: [...messages, userMessage]
-      });
-      setMessages(prev => [...prev, response.data.message]);
-      */
+      const aiMessage = await askMentor([...messages, userMessage]);
+      setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('AI Error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Connection Error: ${error.message || 'The AI service is temporarily unavailable.'}`,
+      }]);
+    } finally {
       setLoading(false);
     }
   };

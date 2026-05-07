@@ -1,250 +1,229 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Calendar, 
-  Clock, 
-  CheckCircle2, 
-  Circle,
-  MoreVertical,
-  Trash2,
-  Edit,
-  User,
-  AlertCircle
-} from 'lucide-react';
-import { supabase } from '../api/supabase';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Plus, Search, Calendar, CheckCircle2, Circle, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { createTask, fetchTasks as fetchTasksApi, updateTask, fetchTeacherInsights } from '../services/dashboardService';
 
 const Tasks = ({ isAdmin = false }) => {
   const { user, profile } = useAuth();
   const [tasks, setTasks] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', description: '', deadline: '', assigned_to: '' });
+  const [newTask, setNewTask] = useState({ title: '', description: '', deadline: '', assigned_to: '', subject: 'General' });
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [teacherStudents, setTeacherStudents] = useState([]);
+  const [proofInputId, setProofInputId] = useState(null);
+  const [proofLink, setProofLink] = useState('');
 
-  useEffect(() => {
-    fetchTasks();
-  }, [user, isAdmin]);
+  async function loadTasks() {
+    if (!user?.id) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
 
-  const fetchTasks = async () => {
     try {
-      let query = supabase.from('tasks').select('*');
-      
-      if (isAdmin) {
-        query = query.eq('assigned_by', user.id);
-      } else {
-        query = query.eq('assigned_to', user.id);
-      }
+      const data = await fetchTasksApi({
+        userId: user.id,
+        role: isAdmin ? 'teacher' : 'student',
+      });
+      setTasks(data);
 
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (error) throw error;
-      setTasks(data || []);
+      if (isAdmin && profile?.id) {
+        // Fetch teacher's own students to populate the dropdown
+        const insights = await fetchTeacherInsights(profile.id);
+        setTeacherStudents(insights.students || []);
+      }
     } catch (err) {
       console.error('Error fetching tasks:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    loadTasks();
+  }, [user, isAdmin]);
 
   const handleAddTask = async (e) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from('tasks').insert([{
+      await createTask({
         ...newTask,
         assigned_by: user.id,
-        status: 'pending'
-      }]);
-      if (error) throw error;
-      setShowAddModal(false);
-      fetchTasks();
+        status: 'pending',
+      });
+      setShowAddForm(false);
+      setNewTask({ title: '', description: '', deadline: '', assigned_to: '', subject: 'General' });
+      loadTasks();
     } catch (err) {
+      alert('Backend Error: ' + err.message);
       console.error('Error adding task:', err);
     }
   };
 
-  const updateTaskStatus = async (id, status) => {
+  const toggleTaskStatus = async (task) => {
+    if (isAdmin) return;
     try {
-      const { error } = await supabase.from('tasks').update({ status }).eq('id', id);
-      if (error) throw error;
-      fetchTasks();
+      if (task.status === 'completed') {
+        // Unmark as completed
+        await updateTask(task.id, { status: 'pending', proof_link: null });
+        loadTasks();
+      } else {
+        // Trigger proof popup instead of instantly completing
+        setProofInputId(task.id);
+        setProofLink('');
+      }
     } catch (err) {
-      console.error('Error updating status:', err);
+      console.error('Error updating task:', err);
+    }
+  };
+
+  const submitProof = async (taskId) => {
+    if (!proofLink.trim()) return alert("Please provide a valid work link before completing!");
+    try {
+      await updateTask(taskId, { status: 'completed', proof_link: proofLink });
+      setProofInputId(null);
+      setProofLink('');
+      loadTasks();
+    } catch (err) {
+      console.error('Error submitting proof:', err);
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed': return 'text-green-500 bg-green-500/10 border-green-500/20';
-      case 'in_progress': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
-      default: return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+      case 'completed': return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'pending': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+      default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
     }
   };
 
+  const filteredTasks = tasks.filter((task) => {
+    const term = search.trim().toLowerCase();
+    if (!term) return true;
+    return (
+      task.title?.toLowerCase().includes(term) ||
+      task.description?.toLowerCase().includes(term) ||
+      task.subject?.toLowerCase().includes(term)
+    );
+  });
+
   return (
     <div className="space-y-6">
-      <header className="flex justify-between items-center">
+      <header className="flex justify-between items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">{isAdmin ? 'Manage Tasks' : 'My Tasks'}</h1>
           <p className="text-gray-400">{isAdmin ? 'Assign and track student assignments' : 'Keep track of your study assignments'}</p>
         </div>
         {isAdmin && (
           <button 
-            onClick={() => setShowAddModal(true)}
+            onClick={() => setShowAddForm((v) => !v)}
             className="btn btn-primary flex items-center gap-2"
           >
-            <Plus size={20} /> Create Task
+            <Plus size={20} /> {showAddForm ? 'Close' : 'Create Task'}
           </button>
         )}
       </header>
 
-      <div className="flex gap-4 mb-8">
+      <div className="flex gap-4 mb-4">
         <div className="flex-1 glass p-2 flex items-center gap-2 rounded-xl">
           <Search size={18} className="text-gray-500 ml-2" />
-          <input 
-            type="text" 
-            placeholder="Search tasks..." 
+          <input
+            type="text"
+            placeholder="Search tasks..."
             className="bg-transparent border-none outline-none w-full text-sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <button className="glass px-4 py-2 rounded-xl flex items-center gap-2 text-sm">
-          <Filter size={18} /> Filter
-        </button>
       </div>
+
+      {isAdmin && showAddForm && (
+        <form onSubmit={handleAddTask} className="glass-card grid grid-cols-1 md:grid-cols-2 gap-3">
+          <input className="bg-white/5 border border-white/10 rounded-lg px-3 py-2" placeholder="Task title" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} required />
+          <input type="date" className="bg-white/5 border border-white/10 rounded-lg px-3 py-2" value={newTask.deadline} onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })} required />
+          <select 
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white outline-none" 
+            value={newTask.assigned_to} 
+            onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })} 
+            required
+            style={{ backgroundColor: '#0f172a' }}
+          >
+            <option value="" disabled>Select Student</option>
+            {teacherStudents.map(s => (
+              <option key={s.studentId} value={s.studentId}>
+                {s.name} (id: {s.studentId.substring(0, 6)})
+              </option>
+            ))}
+          </select>
+          <input className="bg-white/5 border border-white/10 rounded-lg px-3 py-2" placeholder="Subject (Math, Science...)" value={newTask.subject} onChange={(e) => setNewTask({ ...newTask, subject: e.target.value })} />
+          <textarea className="md:col-span-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2" placeholder="Description" value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} />
+          <button className="btn btn-primary md:col-span-2" type="submit">Assign Task</button>
+        </form>
+      )}
 
       <div className="grid grid-cols-1 gap-4">
         {loading ? (
-          <div className="text-center py-12 text-gray-500">Loading tasks...</div>
-        ) : tasks.length === 0 ? (
+          <div className="glass-card text-center py-12 italic text-gray-500">Loading tasks...</div>
+        ) : filteredTasks.length === 0 ? (
           <div className="glass-card text-center py-16">
             <CheckCircle2 size={48} className="mx-auto mb-4 text-gray-600" />
             <h3 className="text-xl font-bold">No tasks found</h3>
-            <p className="text-gray-500">You're all caught up!</p>
+            <p className="text-gray-400 mt-2">You're all caught up!</p>
           </div>
         ) : (
-          tasks.map((task) => (
+          filteredTasks.map((task) => (
             <motion.div 
               key={task.id}
               layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="glass-card flex items-center justify-between group"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className={`p-4 rounded-xl border transition-all flex items-start gap-4 ${task.status === 'completed' ? 'bg-primary/5 border-primary/20' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
             >
-              <div className="flex items-center gap-6">
-                <button 
-                  onClick={() => !isAdmin && updateTaskStatus(task.id, task.status === 'completed' ? 'pending' : 'completed')}
-                  className={`transition-colors ${task.status === 'completed' ? 'text-green-500' : 'text-gray-500 hover:text-primary'}`}
-                >
-                  {task.status === 'completed' ? <CheckCircle2 size={24} /> : <Circle size={24} />}
-                </button>
-                <div>
-                  <h3 className={`font-bold ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>
-                    {task.title}
-                  </h3>
-                  <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                    <span className="flex items-center gap-1"><Calendar size={14} /> {new Date(task.deadline).toLocaleDateString()}</span>
-                    <span className={`px-2 py-0.5 rounded-full border ${getStatusColor(task.status)} capitalize`}>
-                      {task.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                {isAdmin && (
-                  <div className="flex items-center gap-1 text-xs text-gray-500">
-                    <User size={14} /> Assigned to: <span className="text-gray-300 ml-1">Student UID</span>
+              <button onClick={() => toggleTaskStatus(task)} className={`mt-1 shrink-0 ${isAdmin ? 'cursor-default opacity-50' : 'cursor-pointer hover:scale-110 transition-transform'}`}>
+                {task.status === 'completed' ? <CheckCircle2 className="text-primary" /> : <Circle className="text-gray-500" />}
+              </button>
+              <div className="flex-1">
+                <h3 className={`font-bold ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>{task.title}</h3>
+                {task.description && <p className="text-sm text-gray-400 mt-1">{task.description}</p>}
+                
+                {proofInputId === task.id && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <input 
+                      type="url" 
+                      placeholder="Paste link to your work (Google Docs, etc)..." 
+                      className="flex-1 bg-[#0f172a] border border-white/20 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
+                      value={proofLink}
+                      onChange={(e) => setProofLink(e.target.value)}
+                    />
+                    <button onClick={() => submitProof(task.id)} className="btn btn-primary px-4 py-2 text-sm">Submit</button>
+                    <button onClick={() => setProofInputId(null)} className="px-3 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
                   </div>
                 )}
-                <button className="p-2 rounded-lg hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <MoreVertical size={18} />
-                </button>
+                
+                <div className="flex items-center gap-4 mt-4">
+                  {task.deadline && (
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Calendar size={14} /> {new Date(task.deadline).toLocaleDateString()}
+                    </div>
+                  )}
+                  {isAdmin && (
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <User size={14} /> Assigned to: <span className="text-gray-300 ml-1 font-mono">{(task.assigned_to || '').substring(0, 6)}</span>
+                    </div>
+                  )}
+                  {task.proof_link && (
+                    <a href={task.proof_link} target="_blank" rel="noreferrer" className="text-xs font-bold text-secondary-light hover:underline bg-secondary/10 px-2 py-1 rounded">
+                      View Work Proof
+                    </a>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))
         )}
       </div>
-
-      {/* Add Task Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setShowAddModal(false)}
-            />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="glass-card w-full max-w-lg relative z-10"
-            >
-              <h2 className="text-2xl font-bold mb-6">Create New Task</h2>
-              <form onSubmit={handleAddTask} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Title</label>
-                  <input 
-                    type="text" 
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-primary outline-none"
-                    placeholder="e.g. Mathematics Chapter 5"
-                    value={newTask.title}
-                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
-                  <textarea 
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-primary outline-none h-32"
-                    placeholder="Provide details about the task..."
-                    value={newTask.description}
-                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Deadline</label>
-                    <input 
-                      type="date" 
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-primary outline-none"
-                      value={newTask.deadline}
-                      onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Student ID</label>
-                    <input 
-                      type="text" 
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-primary outline-none"
-                      placeholder="uuid..."
-                      value={newTask.assigned_to}
-                      onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-4 mt-8">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowAddModal(false)}
-                    className="btn btn-glass flex-1"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary flex-1">
-                    Create Task
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

@@ -1,0 +1,48 @@
+Γùç injected env (8) from .env // tip: Γîÿ suppress logs { quiet: true }
+Testing with URL: https://zcwlxrkkufiypxaqxgfk.supabase.co
+Key prefix: sb_publishable_
+SignUp Response Data: {
+  user: {
+    id: '796f5e19-02ba-481b-9e55-f2bd3ba40d87',
+    aud: 'authenticated',
+    role: 'authenticated',
+    email: 'test_1778110120470@example.com',
+    email_confirmed_at: '2026-05-06T23:28:41.903168372Z',
+    phone: '',
+    last_sign_in_at: '2026-05-06T23:28:41.910223989Z',
+    app_metadata: { provider: 'email', providers: [Array] },
+    user_metadata: {
+      email: 'test_1778110120470@example.com',
+      email_verified: true,
+      phone_verified: false,
+      sub: '796f5e19-02ba-481b-9e55-f2bd3ba40d87'
+    },
+    identities: [ [Object] ],
+    created_at: '2026-05-06T23:28:41.864024Z',
+    updated_at: '2026-05-06T23:28:41.933072Z',
+    is_anonymous: false
+  },
+  session: {
+    access_token: 'eyJhbGciOiJFUzI1NiIsImtpZCI6IjJmYTIzMTE3LWIwZDQtNDZmNy1hNjI5LTMyZWU0YWMyZmIwOSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3pjd2x4cmtrdWZpeXB4YXF4Z2ZrLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI3OTZmNWUxOS0wMmJhLTQ4MWItOWU1NS1mMmJkM2JhNDBkODciLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzc4MTEzNzIxLCJpYXQiOjE3NzgxMTAxMjEsImVtYWlsIjoidGVzdF8xNzc4MTEwMTIwNDcwQGV4YW1wbGUuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbCI6InRlc3RfMTc3ODExMDEyMDQ3MEBleGFtcGxlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwaG9uZV92ZXJpZmllZCI6ZmFsc2UsInN1YiI6Ijc5NmY1ZTE5LTAyYmEtNDgxYi05ZTU1LWYyYmQzYmE0MGQ4NyJ9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzc4MTEwMTIxfV0sInNlc3Npb25faWQiOiIyNmJiMTVkYS03MDQzLTQ5YzYtODVjNS00MzNiYTBmY2U3MzQiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.0Lp4vDUCqWLOY_oVy1_4ZYnhxcBhgvRdb5gS2s_zmH9axhIEgEMRSJ6_UjVqRDJVPEiboj_JMmPIwlum80_HeA',
+    token_type: 'bearer',
+    expires_in: 3600,
+    expires_at: 1778113721,
+    refresh_token: 'qwrlsuqwl5kt',
+    user: {
+      id: '796f5e19-02ba-481b-9e55-f2bd3ba40d87',
+      aud: 'authenticated',
+      role: 'authenticated',
+      email: 'test_1778110120470@example.com',
+      email_confirmed_at: '2026-05-06T23:28:41.903168372Z',
+      phone: '',
+      last_sign_in_at: '2026-05-06T23:28:41.910223989Z',
+      app_metadata: [Object],
+      user_metadata: [Object],
+      identities: [Array],
+      created_at: '2026-05-06T23:28:41.864024Z',
+      updated_at: '2026-05-06T23:28:41.933072Z',
+      is_anonymous: false
+    }
+  }
+}
+SignIn Error: null

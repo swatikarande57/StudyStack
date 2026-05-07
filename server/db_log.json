@@ -1,0 +1,47 @@
+{
+  "profiles": [
+    {
+      "id": "f4ca0736-8cad-46a6-b94e-8185c5d5a186",
+      "name": "sharayu mohite",
+      "role": "student",
+      "class_key": null
+    },
+    {
+      "id": "ecacab0c-f48b-4e13-ae7c-07381ac6b5f8",
+      "name": "Master Teacher",
+      "role": "teacher",
+      "class_key": "CLASS-101"
+    },
+    {
+      "id": "75fc0b47-8ca4-4356-a030-2860a5c495bc",
+      "name": "yash",
+      "role": "student",
+      "class_key": null
+    },
+    {
+      "id": "719726e3-a379-4045-80d2-f4957170653a",
+      "name": "rohit",
+      "role": "teacher",
+      "class_key": "CLASS-104"
+    },
+    {
+      "id": "796f5e19-02ba-481b-9e55-f2bd3ba40d87",
+      "name": null,
+      "role": "student",
+      "class_key": null
+    },
+    {
+      "id": "316bfd64-b9d3-4006-b0ca-3bbfa526661f",
+      "name": "swati karande",
+      "role": "student",
+      "class_key": null
+    }
+  ],
+  "student_classes": [
+    {
+      "student_id": "316bfd64-b9d3-4006-b0ca-3bbfa526661f",
+      "class_key": "CLASS-104",
+      "enrolled_at": "2026-05-06T23:57:59.743541+00:00"
+    }
+  ]
+}

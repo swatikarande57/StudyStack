@@ -1,49 +1,65 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Users, 
-  BookOpen, 
-  AlertTriangle, 
-  TrendingDown, 
-  CheckCircle2,
-  ArrowRight,
-  MoreHorizontal,
-  Mail
-} from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  LineChart,
-  Line
-} from 'recharts';
-
-const classData = [
-  { name: 'Week 1', avgScore: 65 },
-  { name: 'Week 2', avgScore: 72 },
-  { name: 'Week 3', avgScore: 68 },
-  { name: 'Week 4', avgScore: 85 },
-  { name: 'Week 5', avgScore: 78 },
-];
-
-const studentPerformance = [
-  { student: 'Alex Johnson', score: 92, status: 'Excellence' },
-  { student: 'Sarah Smith', score: 88, status: 'Consistent' },
-  { student: 'Mike Ross', score: 45, status: 'At Risk' },
-  { student: 'Jane Doe', score: 38, status: 'At Risk' },
-  { student: 'Harvey Specter', score: 75, status: 'Average' },
-];
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Users, AlertTriangle, TrendingDown, CheckCircle2, MoreHorizontal, Mail } from 'lucide-react';
+import { CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis } from 'recharts';
+import { useAuth } from '../context/AuthContext';
+import { assignPracticeTasks, fetchTeacherInsights, sendReminder } from '../services/dashboardService';
 
 const TeacherDashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [insights, setInsights] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const { profile } = useAuth();
+
+  const loadInsights = async () => {
+    if (!profile?.id) return;
+    try {
+      const data = await fetchTeacherInsights(profile.id);
+      
+      // Teacher filtering now happens securely on the backend via getTeacherInsights
+      setInsights(data);
+      setInsights(data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInsights();
+  }, [profile]);
+
+  const classData = useMemo(() => (
+    (insights?.students ?? []).slice(0, 6).map((s, idx) => ({ name: `S${idx + 1}`, avgScore: s.score }))
+  ), [insights]);
+
+  const handleAssignPractice = async () => {
+    await assignPracticeTasks(user.id);
+    loadInsights();
+  };
+
+  const handleSendWarning = async () => {
+    const first = insights?.atRiskStudents?.[0];
+    if (!first) return;
+    await sendReminder(first.studentId, 'Your teacher recommends focused revision this week.');
+  };
+
+  if (loading) return <div className="glass-card">Loading teacher insights...</div>;
+  const students = insights?.students ?? [];
+
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold">Class Performance Overview</h1>
-        <p className="text-gray-400">Monitor student progress and identify areas for improvement.</p>
+      <header className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold">Class Performance Overview</h1>
+          <p className="text-gray-400">Monitor student progress and identify areas for improvement.</p>
+        </div>
+        {profile?.class_key && (
+          <div className="bg-secondary/10 border border-secondary/30 px-6 py-3 rounded-2xl text-right">
+            <p className="text-[10px] uppercase tracking-widest text-secondary font-black">Virtual Room Key</p>
+            <p className="text-2xl font-black text-white">{profile.class_key}</p>
+          </div>
+        )}
       </header>
 
       {/* Overview Cards */}
@@ -51,7 +67,7 @@ const TeacherDashboard = () => {
         <div className="glass-card flex items-center justify-between">
           <div>
             <p className="text-gray-400 text-sm">Total Students</p>
-            <p className="text-3xl font-bold mt-1">42</p>
+            <p className="text-3xl font-bold mt-1">{students.length}</p>
           </div>
           <div className="p-4 rounded-2xl bg-blue-500/10 text-blue-500">
             <Users size={24} />
@@ -60,7 +76,7 @@ const TeacherDashboard = () => {
         <div className="glass-card flex items-center justify-between">
           <div>
             <p className="text-gray-400 text-sm">Avg. Score</p>
-            <p className="text-3xl font-bold mt-1">74.2%</p>
+            <p className="text-3xl font-bold mt-1">{Math.round(students.reduce((acc, cur) => acc + cur.score, 0) / Math.max(students.length, 1))}%</p>
           </div>
           <div className="p-4 rounded-2xl bg-green-500/10 text-green-500">
             <CheckCircle2 size={24} />
@@ -69,7 +85,7 @@ const TeacherDashboard = () => {
         <div className="glass-card flex items-center justify-between border-red-500/30">
           <div>
             <p className="text-gray-400 text-sm">Students At Risk</p>
-            <p className="text-3xl font-bold mt-1 text-red-500">4</p>
+            <p className="text-3xl font-bold mt-1 text-red-500">{insights?.atRiskStudents?.length ?? 0}</p>
           </div>
           <div className="p-4 rounded-2xl bg-red-500/10 text-red-500">
             <AlertTriangle size={24} />
@@ -105,22 +121,22 @@ const TeacherDashboard = () => {
         <div className="glass-card">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-bold">Student Performance</h3>
-            <button className="text-sm text-primary-light font-bold hover:underline">View All</button>
+            <button onClick={() => navigate('/teacher/tasks')} className="text-sm text-primary-light font-bold hover:underline">View All</button>
           </div>
           <div className="space-y-4">
-            {studentPerformance.map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group">
+            {students.map((item) => (
+              <div key={item.studentId} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-700 to-gray-800 flex items-center justify-center font-bold text-xs">
-                    {item.student.split(' ').map(n => n[0]).join('')}
+                    {(item.name || '').split(' ').map(n => n[0]).join('')}
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold">{item.student}</h4>
+                    <h4 className="text-sm font-bold">{item.name} <span className="text-[10px] text-gray-400 font-mono ml-2 block sm:inline">id: {item.studentId}</span></h4>
                     <p className={`text-[10px] uppercase tracking-wider font-bold ${
-                      item.status === 'At Risk' ? 'text-red-500' : 
-                      item.status === 'Excellence' ? 'text-green-500' : 'text-gray-400'
+                      item.score < 50 ? 'text-red-500' : 
+                      item.score > 85 ? 'text-green-500' : 'text-gray-400'
                     }`}>
-                      {item.status}
+                      {item.score < 50 ? 'At Risk' : item.score > 85 ? 'Excellence' : 'Average'}
                     </p>
                   </div>
                 </div>
@@ -134,8 +150,11 @@ const TeacherDashboard = () => {
                       ></div>
                     </div>
                   </div>
-                  <button className="p-2 rounded-lg group-hover:bg-white/10">
-                    <MoreHorizontal size={18} className="text-gray-500" />
+                  <button onClick={() => {
+                    sendReminder(item.studentId, `Reminder from your teacher: stay consistent with your pending tasks.`, true);
+                    alert(`Email reminder sent to ${item.name}`);
+                  }} className="p-2 rounded-lg group-hover:bg-white/10" title="Send email reminder">
+                    <Mail size={18} className="text-primary-light" />
                   </button>
                 </div>
               </div>
@@ -144,28 +163,49 @@ const TeacherDashboard = () => {
         </div>
       </div>
 
-      {/* Weak Student Detection Alerts */}
-      <div className="glass-card border-l-4 border-red-500 bg-red-500/5">
-        <div className="flex items-start gap-4">
-          <div className="p-3 rounded-xl bg-red-500/20 text-red-500">
-            <TrendingDown size={24} />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-bold text-red-400">Critical Alert: Low Performance Detected</h3>
-            <p className="text-sm text-gray-400 mt-1 max-w-2xl">
-              Our AI has detected that 4 students have dropped below the 50% performance threshold this week. 
-              We recommend assigning additional practice tasks to these students immediately.
-            </p>
-            <div className="flex gap-4 mt-6">
-              <button className="btn btn-primary bg-red-600 hover:bg-red-700 text-xs px-4 py-2">
-                Assign Practice Tasks
-              </button>
-              <button className="btn btn-glass text-xs px-4 py-2 flex items-center gap-2">
-                <Mail size={14} /> Notify Parents
-              </button>
+      {/* Actionable Insights Panel */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {insights?.topPerformer && insights.topPerformer !== 'N/A' && (
+          <div className="glass-card border-l-4 border-primary bg-primary/5">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-primary/20 text-primary-light">
+                <CheckCircle2 size={24} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold">Top Performer Insight</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Student <span className="text-white font-bold">{insights.topPerformer}</span> is performing exceptionally well this week. 
+                  Keep up the great support!
+                </p>
+                <button className="btn btn-primary text-xs px-4 py-2 mt-4">Recognition Sent</button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {insights?.atRiskCount > 0 && (
+          <div className="glass-card border-l-4 border-red-500 bg-red-500/5">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-red-500/20 text-red-500">
+                <TrendingDown size={24} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold">Weakness Alert: {insights?.mostIgnoredSubject || 'General'}</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  {insights?.atRiskCount} students are currently categorized as 'At-Risk' in {insights?.mostIgnoredSubject || 'General'} based on recent performance.
+                </p>
+                <div className="flex gap-2 mt-4">
+                  <button onClick={handleAssignPractice} className="btn btn-primary bg-red-600 hover:bg-red-700 text-xs px-4 py-2">
+                    Assign Practice
+                  </button>
+                  <button onClick={handleSendWarning} className="btn btn-glass text-xs px-4 py-2 flex items-center gap-2">
+                    <Mail size={14} /> Notify At-Risk
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

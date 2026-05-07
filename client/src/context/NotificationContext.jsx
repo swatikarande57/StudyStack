@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
+import { fetchNotifications, markNotificationRead } from '../services/dashboardService';
 
 const NotificationContext = createContext();
 
@@ -12,17 +13,12 @@ export const NotificationProvider = ({ children }) => {
     if (!user || !supabase) return;
 
     // Fetch initial notifications
-    const fetchNotifications = async () => {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (!error) setNotifications(data);
+    const loadNotifications = async () => {
+      const items = await fetchNotifications(user.id);
+      setNotifications(items);
     };
 
-    fetchNotifications();
+    loadNotifications();
 
     // Subscribe to new notifications
     const channel = supabase
@@ -44,13 +40,11 @@ export const NotificationProvider = ({ children }) => {
   }, [user]);
 
   const markAsRead = async (id) => {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', id);
-    
-    if (!error) {
+    try {
+      await markNotificationRead(id);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    } catch (error) {
+      console.error(error);
     }
   };
 

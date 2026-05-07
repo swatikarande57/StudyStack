@@ -1,124 +1,257 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Target, 
-  Lock, 
-  Unlock, 
-  CheckCircle2, 
-  TrendingUp, 
-  Trophy,
-  ArrowRight,
-  Flame
+  Target, Lock, Unlock, CheckCircle2, TrendingUp, Trophy, ArrowRight, Flame, Plus, AlertCircle 
 } from 'lucide-react';
-import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
+import { fetchGoals, updateGoalProgress, createGoal, fetchTeacherInsights } from '../services/dashboardService';
 
-const GoalCard = ({ goal, onUnlock }) => {
-  const isCompleted = goal.progress >= 95;
+const GoalCard = ({ goal, onBoost, isAdmin }) => {
+  const progressVal = Number(goal.progress || goal.completion_percentage || 0);
+  const isCompleted = progressVal >= 90;
   
   return (
-    <div className={`glass-card relative overflow-hidden transition-all duration-500 ${goal.is_locked ? 'opacity-60 grayscale' : 'hover:scale-[1.02]'}`}>
+    <div className={`glass-card relative overflow-hidden transition-all duration-500 hover:scale-[1.02] ${!goal.unlocked && !isAdmin ? 'opacity-60 grayscale' : ''}`}>
       <div className="flex justify-between items-start mb-4">
-        <div className={`p-3 rounded-xl ${goal.is_locked ? 'bg-gray-500/20' : 'bg-primary/20'}`}>
-          {goal.is_locked ? <Lock className="text-gray-500" size={24} /> : <Target className="text-primary-light" size={24} />}
+        <div className={`p-3 rounded-xl ${!goal.unlocked ? 'bg-gray-500/20' : 'bg-primary/20'}`}>
+          {!goal.unlocked ? <Lock className="text-gray-500" size={24} /> : <Target className="text-primary-light" size={24} />}
         </div>
-        {isCompleted && <CheckCircle2 className="text-green-500 animate-bounce" size={24} />}
+        {isCompleted && <CheckCircle2 className="text-green-500" size={24} />}
       </div>
 
-      <h3 className="text-xl font-bold mb-2">{goal.target}</h3>
+      <h3 className="text-xl font-bold mb-2">{goal.title || goal.target}</h3>
       <div className="space-y-4">
         <div className="flex justify-between text-sm mb-1">
           <span className="text-gray-400">Progress</span>
-          <span className="font-bold">{goal.progress}%</span>
+          <span className="font-bold">{progressVal}%</span>
         </div>
         <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
           <motion.div 
             initial={{ width: 0 }}
-            animate={{ width: `${goal.progress}%` }}
-            className={`h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000`}
+            animate={{ width: `${progressVal}%` }}
+            className={`h-full transition-all duration-1000 ${isCompleted ? 'bg-green-500' : 'bg-gradient-to-r from-primary to-secondary'}`}
           />
         </div>
       </div>
 
-      <div className="mt-8 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <TrendingUp size={14} />
-          {goal.is_locked ? 'Required: Prev 95%' : 'In Progress'}
+      <div className="mt-6 flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <TrendingUp size={14} />
+            {!goal.unlocked ? 'Locked (Requires Prev 90%)' : (isCompleted ? 'Completed ✓' : 'In Progress')}
+          </div>
+          {goal.deadline && (
+            <div className="text-xs font-bold text-yellow-400">
+              ⏰ Due: {new Date(goal.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </div>
+          )}
         </div>
-        {!goal.is_locked && !isCompleted && (
-          <button className="text-sm font-bold text-primary-light flex items-center gap-1 hover:underline">
-            Details <ArrowRight size={14} />
+        {!isAdmin && goal.unlocked && progressVal < 100 && (
+          <button onClick={() => onBoost(goal)} className="text-sm font-bold text-primary-light flex items-center gap-1 hover:underline">
+            +10% <ArrowRight size={14} />
           </button>
         )}
       </div>
-
-      {goal.is_locked && (
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center">
-          <div className="bg-surface-dark border border-white/10 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2">
-            <Lock size={14} /> Locked Milestone
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-const Goals = () => {
-  const { user } = useAuth();
-  const [goals, setGoals] = useState([
-    { id: 1, target: 'Complete Basic Algebra', progress: 100, is_locked: false },
-    { id: 2, target: 'Master Calculus Fundamentals', progress: 85, is_locked: false },
-    { id: 3, target: 'Advanced Physics Projects', progress: 0, is_locked: true },
-    { id: 4, target: 'Quantum Mechanics Intro', progress: 0, is_locked: true },
-  ]);
+const Goals = ({ isAdmin = false }) => {
+  const { user, profile } = useAuth();
+  const [goals, setGoals] = useState([]);
+  const [teacherStudents, setTeacherStudents] = useState([]);
+  const [selectedStudent, setSelectedStudent] = useState('');
+  
+  // Assignment state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newGoal, setNewGoal] = useState({ title: '', target: '', deadline: '' });
+  const [assignError, setAssignError] = useState('');
+
+  useEffect(() => {
+    if (isAdmin && profile?.id) {
+      fetchTeacherInsights(profile.id).then(insights => {
+        const filtered = insights?.data?.students || insights?.students || [];
+        setTeacherStudents(filtered);
+      });
+    }
+  }, [isAdmin, profile]);
+
+  useEffect(() => {
+    const targetId = isAdmin ? selectedStudent : user?.id;
+    if (!targetId) {
+      setGoals([]);
+      return;
+    }
+    fetchGoals(targetId).then((payload) => setGoals(payload.goals ?? []));
+  }, [user, isAdmin, selectedStudent]);
+
+  const onBoost = async (goal) => {
+    if (isAdmin) return;
+    const current = Number(goal.progress || goal.completion_percentage || 0);
+    const next = Math.min(100, current + 10);
+    await updateGoalProgress(goal.id, next);
+    const payload = await fetchGoals(user.id);
+    setGoals(payload.goals ?? []);
+  };
+
+  const handleAssignGoal = async (e) => {
+    e.preventDefault();
+    setAssignError('');
+    
+    if (!selectedStudent) {
+      setAssignError("Please select a student first!");
+      return;
+    }
+
+    // STRICT PROGRESSION RULE: Check if ANY existing goals are below 90%
+    const hasUnfinishedGoals = goals.some(g => Number(g.progress || g.completion_percentage || 0) < 90);
+    if (hasUnfinishedGoals) {
+      setAssignError("Cannot assign! Student has an existing milestone below 90%. They must complete it first.");
+      return;
+    }
+
+    try {
+      await createGoal({
+        student_id: selectedStudent,
+        title: newGoal.title,
+        target: newGoal.target || newGoal.title,
+        deadline: newGoal.deadline || null,
+        assigned_by: profile.id,
+      });
+      setNewGoal({ title: '', target: '', deadline: '' });
+      setShowAddForm(false);
+      // Reload goals for this student
+      const payload = await fetchGoals(selectedStudent);
+      setGoals(payload.goals ?? []);
+    } catch (err) {
+      alert("Error adding milestone: " + err.message);
+    }
+  };
 
   return (
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold">Academic Milestones</h1>
-          <p className="text-gray-400">Unlock new goals by achieving 95% completion in previous ones.</p>
+          <h1 className="text-3xl font-bold">{isAdmin ? 'Assign Milestones' : 'Academic Milestones'}</h1>
+          <p className="text-gray-400">
+            {isAdmin 
+              ? 'Assign new goals. Must attain 90% completion on existing goals first.'
+              : 'Unlock new goals by achieving 90% completion in previous ones.'}
+          </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="glass px-6 py-4 rounded-2xl flex items-center gap-4">
-            <div className="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center text-yellow-500">
-              <Trophy size={24} />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Badges Earned</p>
-              <p className="text-xl font-black">12</p>
+        
+        {isAdmin ? (
+          <div className="flex items-center gap-4">
+            <select 
+              className="bg-[#0f172a] border border-white/20 rounded-lg px-4 py-2 text-white outline-none focus:border-primary min-w-[200px]"
+              value={selectedStudent}
+              onChange={(e) => setSelectedStudent(e.target.value)}
+            >
+              <option value="">-- Select Student to View --</option>
+              {teacherStudents.map(s => (
+                <option key={s.studentId} value={s.studentId}>
+                  {s.name} (id: {s.studentId.substring(0, 6)})
+                </option>
+              ))}
+            </select>
+            {selectedStudent && (
+              <button onClick={() => setShowAddForm(!showAddForm)} className="btn btn-primary flex items-center gap-2">
+                <Plus size={18} /> {showAddForm ? 'Cancel' : 'Assign Goal'}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="glass px-6 py-4 rounded-2xl flex items-center gap-4">
+              <div className="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center text-yellow-500">
+                <Trophy size={24} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Milestones Hit</p>
+                <p className="text-xl font-black">{goals.filter(g => Number(g.progress) >= 90).length}</p>
+              </div>
             </div>
           </div>
-          <div className="glass px-6 py-4 rounded-2xl flex items-center gap-4">
-            <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center text-orange-500">
-              <Flame size={24} />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Goal Streak</p>
-              <p className="text-xl font-black">4</p>
-            </div>
-          </div>
-        </div>
+        )}
       </header>
+
+      <AnimatePresence>
+        {isAdmin && showAddForm && (
+          <motion.form 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            onSubmit={handleAssignGoal} 
+            className="glass-card bg-primary/5 border border-primary/20 space-y-4"
+          >
+            <h3 className="font-bold text-lg text-primary-light flex items-center gap-2">
+              <Target size={20} /> Create New Milestone
+            </h3>
+            {assignError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg flex items-center gap-2 text-sm font-bold">
+                <AlertCircle size={16} /> {assignError}
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input 
+                className="bg-[#0f172a] border border-white/10 rounded-lg px-3 py-2 text-sm" 
+                placeholder="Goal Title (e.g. Master Calculus)" 
+                value={newGoal.title} 
+                onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })} 
+                required 
+              />
+              <input 
+                type="date"
+                className="bg-[#0f172a] border border-white/10 rounded-lg px-3 py-2 text-sm" 
+                title="Deadline for this milestone"
+                value={newGoal.deadline} 
+                onChange={(e) => setNewGoal({ ...newGoal, deadline: e.target.value })} 
+                required
+              />
+              <input 
+                className="bg-[#0f172a] border border-white/10 rounded-lg px-3 py-2 text-sm md:col-span-2" 
+                placeholder="Description / Target Detail (optional)" 
+                value={newGoal.target} 
+                onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })} 
+              />
+            </div>
+            <div className="flex justify-end pt-2">
+              <button className="btn btn-primary px-6" type="submit">Deploy Milestone</button>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {goals.map((goal) => (
-          <GoalCard key={goal.id} goal={goal} />
+          <GoalCard key={goal.id} goal={goal} onBoost={onBoost} isAdmin={isAdmin} />
         ))}
+        {isAdmin && selectedStudent && goals.length === 0 && (
+          <div className="col-span-full text-center py-12 text-gray-500 italic glass-card">
+            This student has absolutely zero goals. Time to assign their first milestone!
+          </div>
+        )}
+        {isAdmin && !selectedStudent && (
+          <div className="col-span-full text-center py-12 text-gray-500 italic glass-card border border-white/5">
+            Select a student from the top menu to view or assign milestones.
+          </div>
+        )}
       </div>
 
-      <div className="glass-card bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary">
-        <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
-          <Unlock size={20} className="text-primary-light" />
-          How Unlocking Works
-        </h3>
-        <p className="text-gray-400 text-sm leading-relaxed max-w-3xl">
-          To maintain high-quality learning, our system enforces a mastery rule. 
-          The next goal in your curriculum will automatically unlock once you demonstrate 
-          <strong> 95% or higher completion</strong> in your current milestone. 
-          Keep pushing your limits!
-        </p>
-      </div>
+      {!isAdmin && (
+        <div className="glass-card bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary">
+          <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+            <Unlock size={20} className="text-primary-light" />
+            How Unlocking Works
+          </h3>
+          <p className="text-gray-400 text-sm leading-relaxed max-w-3xl">
+            To maintain high-quality learning, our system enforces a strict mastery rule. 
+            The Teacher cannot assign you a new milestone until you demonstrate 
+            <strong> 90% or higher completion</strong> in all your current milestones. 
+            Keep pushing your limits!
+          </p>
+        </div>
+      )}
     </div>
   );
 };

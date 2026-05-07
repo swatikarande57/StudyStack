@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -8,8 +7,6 @@ import {
   Target, 
   MessageSquare, 
   LogOut,
-  Bell,
-  Settings,
   Users
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -17,7 +14,7 @@ import { useAuth } from '../context/AuthContext';
 const Sidebar = () => {
   const { profile, signOut, isAdmin } = useAuth();
 
-  const navItems = [
+  const studentNavItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Tasks', icon: CheckSquare, path: '/tasks' },
     { name: 'Timetable', icon: Calendar, path: '/timetable' },
@@ -26,9 +23,10 @@ const Sidebar = () => {
     { name: 'AI Mentor', icon: MessageSquare, path: '/ai-mentor' },
   ];
 
-  const adminItems = [
+  const teacherNavItems = [
     { name: 'Class Overview', icon: Users, path: '/teacher/overview' },
     { name: 'Assign Tasks', icon: CheckSquare, path: '/teacher/tasks' },
+    { name: 'Manage Goals', icon: Target, path: '/teacher/goals' },
   ];
 
   return (
@@ -46,7 +44,7 @@ const Sidebar = () => {
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 mb-2">
           Menu
         </div>
-        {navItems.map((item) => (
+        {(isAdmin ? teacherNavItems : studentNavItems).map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
@@ -59,25 +57,6 @@ const Sidebar = () => {
           </NavLink>
         ))}
 
-        {isAdmin && (
-          <>
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 mt-8 mb-2">
-              Teacher Tools
-            </div>
-            {adminItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => 
-                  `nav-link ${isActive ? 'nav-link-active' : ''}`
-                }
-              >
-                <item.icon size={20} />
-                <span>{item.name}</span>
-              </NavLink>
-            ))}
-          </>
-        )}
       </nav>
 
       <div className="mt-auto border-t border-white/10 pt-4 flex flex-col gap-2">
@@ -87,7 +66,12 @@ const Sidebar = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{profile?.name || 'User'}</p>
-            <p className="text-xs text-gray-500 truncate capitalize">{profile?.role || 'Student'}</p>
+            <p className="text-xs text-gray-500 truncate capitalize flex flex-col">
+              <span>{profile?.role || 'Student'}</span>
+              {profile?.class_key && profile.role === 'student' && (
+                <span className="text-primary-light font-bold mt-0.5 tracking-wider">ROOM: {profile.class_key}</span>
+              )}
+            </p>
           </div>
         </div>
         <button 

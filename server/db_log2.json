@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "id": "316bfd64-b9d3-4006-b0ca-3bbfa526661f",
+      "name": "swati karande",
+      "email": "swatikarande57@gmail.com",
+      "role": "student",
+      "created_at": "2026-05-06T23:57:47.057932+00:00",
+      "updated_at": "2026-05-06T23:57:47.057932+00:00",
+      "class_key": null,
+      "student_classes": [
+        {
+          "class_key": "CLASS-104"
+        }
+      ]
+    }
+  ],
+  "error": null
+}
