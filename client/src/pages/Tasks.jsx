@@ -111,17 +111,17 @@ const Tasks = ({ isAdmin = false }) => {
 
   return (
     <div className="space-y-6">
-      <header className="flex justify-between items-center gap-4">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{isAdmin ? 'Manage Tasks' : 'My Tasks'}</h1>
-          <p className="text-gray-400">{isAdmin ? 'Assign and track student assignments' : 'Keep track of your study assignments'}</p>
+          <h1 className="text-2xl md:text-3xl font-bold">{isAdmin ? 'Manage Tasks' : 'My Tasks'}</h1>
+          <p className="text-xs md:text-sm text-gray-400">{isAdmin ? 'Assign assignments' : 'Track your study tasks'}</p>
         </div>
         {isAdmin && (
           <button 
             onClick={() => setShowAddForm((v) => !v)}
-            className="btn btn-primary flex items-center gap-2"
+            className="btn btn-primary flex items-center gap-2 w-full sm:w-auto justify-center"
           >
-            <Plus size={20} /> {showAddForm ? 'Close' : 'Create Task'}
+            <Plus size={18} /> {showAddForm ? 'Close' : 'Create Task'}
           </button>
         )}
       </header>

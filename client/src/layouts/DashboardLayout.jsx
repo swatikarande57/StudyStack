@@ -1,7 +1,7 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { Bell, Search, Moon, Sun } from 'lucide-react';
+import { Bell, Search, Moon, Sun, Menu } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNotifications } from '../context/NotificationContext';
@@ -10,6 +10,7 @@ const DashboardLayout = () => {
   const { user, loading } = useAuth();
   const { notifications, markAsRead } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
 
   useEffect(() => {
@@ -27,12 +28,20 @@ const DashboardLayout = () => {
 
   return (
     <div className="flex min-h-screen bg-surface-dark text-white font-inter">
-      <Sidebar />
-      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 relative">
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 relative max-w-full overflow-hidden">
         <header className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-white">Welcome back!</h2>
-            <p className="text-gray-400">Track your progress and stay productive.</p>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setSidebarOpen(true)} 
+              className="md:hidden p-2.5 glass rounded-xl hover:bg-white/10 text-gray-400"
+            >
+              <Menu size={22} />
+            </button>
+            <div>
+              <h2 className="text-xl md:text-2xl font-bold text-white truncate">Welcome back!</h2>
+              <p className="text-xs md:text-sm text-gray-400">Track your progress and stay productive.</p>
+            </div>
           </div>
           
           <div className="flex items-center gap-2 md:gap-4">

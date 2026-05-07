@@ -66,85 +66,85 @@ const AIMentor = () => {
   ];
 
   return (
-    <div className="flex h-[calc(100vh-180px)] gap-8">
+    <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-180px)] gap-6 lg:gap-8 pb-8 lg:pb-0">
       {/* Left Chat Main area */}
-      <div className="flex-1 flex flex-col glass rounded-3xl overflow-hidden relative border border-white/10">
-        <div className="bg-white/5 p-6 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <Brain className="text-white" size={24} />
+      <div className="flex-1 flex flex-col glass rounded-3xl overflow-hidden relative border border-white/10 min-h-[500px] lg:min-h-0">
+        <div className="bg-white/5 p-4 md:p-6 border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-primary rounded-xl flex items-center justify-center shrink-0">
+              <Brain className="text-white" size={20} />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Study-Stack AI Mentor</h2>
+              <h2 className="text-base md:text-lg font-bold truncate max-w-[150px] sm:max-w-none">AI Study Mentor</h2>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span className="text-xs text-gray-400">Online & Ready to Help</span>
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                <span className="text-[10px] text-gray-400">Ready to Help</span>
               </div>
             </div>
           </div>
           <button className="p-2 rounded-xl hover:bg-white/10 transition-colors">
-            <RefreshCcw size={18} className="text-gray-500" />
+            <RefreshCcw size={16} className="text-gray-500" />
           </button>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 custom-scrollbar max-h-[400px] lg:max-h-none">
           {messages.map((msg, i) => (
             <motion.div 
               key={i}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex items-start gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+              className={`flex items-start gap-3 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
             >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0 ${
                 msg.role === 'assistant' ? 'bg-primary/20 text-primary-light' : 'bg-secondary/20 text-secondary-light'
               }`}>
-                {msg.role === 'assistant' ? <Bot size={22} /> : <User size={22} />}
+                {msg.role === 'assistant' ? <Bot size={18} /> : <User size={18} />}
               </div>
-              <div className={`max-w-[70%] p-4 rounded-2xl ${
+              <div className={`max-w-[85%] md:max-w-[70%] p-3 md:p-4 rounded-2xl ${
                 msg.role === 'assistant' 
                   ? 'bg-white/5 border border-white/10 text-gray-200' 
                   : 'bg-primary text-white ml-auto'
               }`}>
-                <p className="text-sm leading-relaxed">{msg.content}</p>
+                <p className="text-xs md:text-sm leading-relaxed">{msg.content}</p>
               </div>
             </motion.div>
           ))}
           {loading && (
-            <div className="flex items-center gap-2 text-gray-500 text-xs ml-14">
+            <div className="flex items-center gap-2 text-gray-500 text-[10px] ml-11 md:ml-14">
               <span className="animate-bounce">●</span>
               <span className="animate-bounce delay-100">●</span>
               <span className="animate-bounce delay-200">●</span>
-              <span>Mentor is thinking...</span>
+              <span>Thinking...</span>
             </div>
           )}
           <div ref={chatEndRef} />
         </div>
 
         {/* Input */}
-        <div className="p-6 bg-white/5 border-t border-white/10">
-          <form onSubmit={handleSendMessage} className="relative flex items-center gap-4">
+        <div className="p-4 md:p-6 bg-white/5 border-t border-white/10 mt-auto">
+          <form onSubmit={handleSendMessage} className="relative flex items-center gap-3 md:gap-4">
             <input 
               type="text" 
-              className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-4 px-6 pr-16 focus:border-primary outline-none transition-all"
-              placeholder="Ask anything about your studies..."
+              className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-3 md:py-4 px-4 md:px-6 pr-14 focus:border-primary outline-none transition-all text-sm"
+              placeholder="Ask anything..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
             />
             <button 
               type="submit"
-              className="absolute right-2 p-3 bg-primary rounded-xl text-white hover:bg-primary-dark transition-all disabled:opacity-50"
+              className="absolute right-1.5 md:right-2 p-2.5 md:p-3 bg-primary rounded-xl text-white hover:bg-primary-dark transition-all disabled:opacity-50"
               disabled={loading || !input.trim()}
             >
-              <Send size={20} />
+              <Send size={18} />
             </button>
           </form>
         </div>
       </div>
 
       {/* Right Sidebar Suggestions */}
-      <div className="w-80 flex flex-col gap-6">
+      <div className="w-full lg:w-80 flex flex-col gap-6">
         <div className="glass-card p-6">
           <h3 className="font-bold mb-4 flex items-center gap-2">
             <Sparkles size={18} className="text-yellow-400" />

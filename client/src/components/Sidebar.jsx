@@ -7,11 +7,12 @@ import {
   Target, 
   MessageSquare, 
   LogOut,
-  Users
+  Users,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }) => {
   const { profile, signOut, isAdmin } = useAuth();
 
   const studentNavItems = [
@@ -30,15 +31,31 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="w-64 h-screen glass border-r border-white/10 flex flex-col p-4 fixed left-0 top-0">
-      <div className="flex items-center gap-3 px-2 py-6 mb-8">
-        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-          <span className="text-xl font-bold italic">SS</span>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <div className={`w-64 h-screen glass border-r border-white/10 flex flex-col p-4 fixed left-0 top-0 z-50 transition-transform duration-300 transform ${
+        isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      }`}>
+        <div className="flex items-center justify-between px-2 py-6 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <span className="text-xl font-bold italic">SS</span>
+            </div>
+            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+              Study-Stack
+            </h1>
+          </div>
+          <button onClick={onClose} className="md:hidden p-2 text-gray-400 hover:text-white">
+            <X size={24} />
+          </button>
         </div>
-        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-          Study-Stack
-        </h1>
-      </div>
 
       <nav className="flex-1 flex flex-col gap-2">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 mb-2">
@@ -82,7 +99,8 @@ const Sidebar = () => {
           <span>Sign Out</span>
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

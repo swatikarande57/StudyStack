@@ -48,16 +48,16 @@ const TeacherDashboard = () => {
   const students = insights?.students ?? [];
 
   return (
-    <div className="space-y-8">
-      <header className="flex justify-between items-start">
+    <div className="space-y-6 md:space-y-8">
+      <header className="flex flex-col sm:flex-row justify-between items-start gap-4 sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold">Class Performance Overview</h1>
-          <p className="text-gray-400">Monitor student progress and identify areas for improvement.</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Class Performance Overview</h1>
+          <p className="text-xs md:text-sm text-gray-400">Monitor student progress and identify areas for improvement.</p>
         </div>
         {profile?.class_key && (
-          <div className="bg-secondary/10 border border-secondary/30 px-6 py-3 rounded-2xl text-right">
-            <p className="text-[10px] uppercase tracking-widest text-secondary font-black">Virtual Room Key</p>
-            <p className="text-2xl font-black text-white">{profile.class_key}</p>
+          <div className="bg-secondary/10 border border-secondary/30 px-4 md:px-6 py-2 md:py-3 rounded-2xl text-left sm:text-right shrink-0">
+            <p className="text-[9px] md:text-[10px] uppercase tracking-widest text-secondary font-black">Virtual Room Key</p>
+            <p className="text-xl md:text-2xl font-black text-white">{profile.class_key}</p>
           </div>
         )}
       </header>
@@ -131,13 +131,16 @@ const TeacherDashboard = () => {
                     {(item.name || '').split(' ').map(n => n[0]).join('')}
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold">{item.name} <span className="text-[10px] text-gray-400 font-mono ml-2 block sm:inline">id: {item.studentId}</span></h4>
-                    <p className={`text-[10px] uppercase tracking-wider font-bold ${
-                      item.score < 50 ? 'text-red-500' : 
-                      item.score > 85 ? 'text-green-500' : 'text-gray-400'
-                    }`}>
-                      {item.score < 50 ? 'At Risk' : item.score > 85 ? 'Excellence' : 'Average'}
-                    </p>
+                    <h4 className="text-sm font-bold truncate max-w-[120px] sm:max-w-none">{item.name}</h4>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-0.5">
+                      <span className="text-[9px] text-gray-500 font-mono tracking-tighter sm:tracking-normal">ID: {item.studentId.slice(0,8)}...</span>
+                      <span className={`text-[9px] uppercase tracking-wider font-bold ${
+                        item.score < 50 ? 'text-red-500' : 
+                        item.score > 85 ? 'text-green-500' : 'text-gray-400'
+                      }`}>
+                        {item.score < 50 ? 'At Risk' : item.score > 85 ? 'Excellence' : 'Average'}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
@@ -172,12 +175,11 @@ const TeacherDashboard = () => {
                 <CheckCircle2 size={24} />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold">Top Performer Insight</h3>
-                <p className="text-sm text-gray-400 mt-1">
-                  Student <span className="text-white font-bold">{insights.topPerformer}</span> is performing exceptionally well this week. 
-                  Keep up the great support!
+                <h3 className="text-base md:text-lg font-bold">Top Performer Insight</h3>
+                <p className="text-xs md:text-sm text-gray-400 mt-1">
+                  Student <span className="text-white font-bold">{insights.topPerformer}</span> is performing exceptionally well this week.
                 </p>
-                <button className="btn btn-primary text-xs px-4 py-2 mt-4">Recognition Sent</button>
+                <button className="btn btn-primary text-[10px] px-3 py-1.5 mt-4">Recognition Sent</button>
               </div>
             </div>
           </div>

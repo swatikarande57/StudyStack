@@ -130,24 +130,24 @@ const Goals = ({ isAdmin = false }) => {
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold">{isAdmin ? 'Assign Milestones' : 'Academic Milestones'}</h1>
-          <p className="text-gray-400">
+          <h1 className="text-2xl md:text-3xl font-bold">{isAdmin ? 'Assign Milestones' : 'Academic Milestones'}</h1>
+          <p className="text-xs md:text-sm text-gray-400">
             {isAdmin 
-              ? 'Assign new goals. Must attain 90% completion on existing goals first.'
-              : 'Unlock new goals by achieving 90% completion in previous ones.'}
+              ? 'Assign goals. Must attain 90% on existing ones first.'
+              : 'Unlock new goals by achieving 90% completion.'}
           </p>
         </div>
         
         {isAdmin ? (
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
             <select 
-              className="bg-[#0f172a] border border-white/20 rounded-lg px-4 py-2 text-white outline-none focus:border-primary min-w-[200px]"
+              className="bg-[#0f172a] border border-white/20 rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-primary w-full sm:min-w-[200px]"
               value={selectedStudent}
               onChange={(e) => setSelectedStudent(e.target.value)}
             >
-              <option value="">-- Select Student to View --</option>
+              <option value="">-- Select Student --</option>
               {teacherStudents.map(s => (
                 <option key={s.studentId} value={s.studentId}>
                   {s.name} (id: {s.studentId.substring(0, 6)})
@@ -155,20 +155,20 @@ const Goals = ({ isAdmin = false }) => {
               ))}
             </select>
             {selectedStudent && (
-              <button onClick={() => setShowAddForm(!showAddForm)} className="btn btn-primary flex items-center gap-2">
+              <button onClick={() => setShowAddForm(!showAddForm)} className="btn btn-primary flex items-center justify-center gap-2 py-2.5">
                 <Plus size={18} /> {showAddForm ? 'Cancel' : 'Assign Goal'}
               </button>
             )}
           </div>
         ) : (
           <div className="flex items-center gap-4">
-            <div className="glass px-6 py-4 rounded-2xl flex items-center gap-4">
-              <div className="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center text-yellow-500">
-                <Trophy size={24} />
+            <div className="glass px-4 md:px-6 py-3 md:py-4 rounded-2xl flex items-center gap-4 w-full sm:w-auto">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center text-yellow-500 shrink-0">
+                <Trophy size={20} md:size={24} />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Milestones Hit</p>
-                <p className="text-xl font-black">{goals.filter(g => Number(g.progress) >= 90).length}</p>
+                <p className="text-[10px] md:text-xs text-gray-500">Milestones Hit</p>
+                <p className="text-lg md:text-xl font-black">{goals.filter(g => Number(g.progress) >= 90).length}</p>
               </div>
             </div>
           </div>

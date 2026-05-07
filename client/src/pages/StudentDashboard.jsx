@@ -135,33 +135,31 @@ const StudentDashboard = () => {
   );
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-6 md:space-y-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <StatCard title="Tasks Completed" value={`${completed} / ${tasks?.length || 0}`} icon={CheckCircle2} color="bg-blue-500" trend={Math.max(progress?.completionRate || 0, 1)} />
         <StatCard title="Tasks Due Today" value={todayDue} icon={Clock} color="bg-purple-500" />
         <StatCard title="Productivity Score" value={`${progress?.productivityScore ?? 0}%`} icon={TrendingUp} color="bg-green-500" />
-        <div className="glass-card flex flex-col justify-between">
-           <div>
-               <h3 className="text-gray-400 text-sm font-medium mb-2">Join Another Room</h3>
+        <div className="glass-card flex flex-col justify-center p-4">
+               <h3 className="text-gray-400 text-[10px] md:text-xs font-semibold uppercase tracking-wider mb-2">Join Another Room</h3>
                <form onSubmit={handleJoinClass} className="flex gap-2">
                  <input 
                    type="text" 
-                   placeholder="Class Key" 
+                   placeholder="Key..." 
                    value={classKeyInput}
                    onChange={(e) => setClassKeyInput(e.target.value)}
-                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm uppercase focus:border-primary outline-none"
+                   className="w-full bg-white/5 border border-white/10 rounded-lg px-2 md:px-3 py-1.5 md:py-2 text-xs uppercase focus:border-primary outline-none"
                    required
                  />
-                 <button type="submit" disabled={joining} className="btn btn-primary px-4 py-2 text-sm rounded-lg whitespace-nowrap">
+                 <button type="submit" disabled={joining} className="btn btn-primary px-3 py-1.5 text-[10px] rounded-lg whitespace-nowrap">
                    {joining ? '...' : 'Join'}
                  </button>
                </form>
-           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass-card h-[400px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="lg:col-span-2 glass-card h-[300px] md:h-[400px]">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-bold">Weekly Performance</h3>
             <div className="flex gap-4 text-xs text-gray-400">
