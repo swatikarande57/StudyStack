@@ -254,7 +254,11 @@ const StudentDashboard = () => {
                     <h5 className="text-sm font-medium">{item.title}</h5>
                     <span className="text-[10px] uppercase font-bold text-gray-500">{item.status}</span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">{item.deadline ? new Date(item.deadline).toLocaleDateString() : 'No deadline'}</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {item.deadline 
+                      ? new Date(item.deadline).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) 
+                      : 'No deadline'}
+                  </p>
                 </div>
               ))}
             </div>
