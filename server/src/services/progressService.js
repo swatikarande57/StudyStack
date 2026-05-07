@@ -24,7 +24,7 @@ export const getStudentProgress = async (studentId) => {
             overdueCount: overdueTasks.length,
             completionRate: tasks?.length ? Math.round((completedTasks.length / tasks.length) * 100) : 0,
             weakSubjects,
-            productivityScore: tasks?.length ? Math.max(0, 100 - (overdueTasks.length * 10)) : 0
+            productivityScore: tasks?.length ? Math.max(0, Math.round((completedTasks.length / tasks.length) * 100)) : 0
         };
     } catch (error) {
         console.error('Progress Service Error:', error);
@@ -84,7 +84,7 @@ export const getTeacherInsights = async (teacherId) => {
         );
 
         const atRiskStudents = studentStats
-            .filter(s => s.taskCount > 0 && (s.overdueCount > 1 || s.completionRate < 50))
+            .filter(s => s.overdueCount > 1 || s.completionRate < 50 || s.taskCount === 0)
             .map(s => ({
                 studentId: s.id,
                 name: s.name,
