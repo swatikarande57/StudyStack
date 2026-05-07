@@ -6,13 +6,13 @@ import { fetchGoals, fetchStudentProgress, fetchTasks } from '../services/dashbo
 import { motion } from 'framer-motion';
 import { supabase } from '../api/supabase';
 
-const StatCard = ({ title, value, icon: Icon, color, trend }) => (
+const StatCard = ({ title, value, icon: Icon, bgColor, iconColor, trend }) => (
   <div className="glass-card hover:translate-y-[-4px]">
     <div className="flex justify-between items-start mb-4">
-      <div className={`p-3 rounded-xl ${color} bg-opacity-20`}>
-        <Icon className={color.replace('bg-', 'text-')} size={24} />
+      <div className={`p-3 rounded-xl ${bgColor}`}>
+        <Icon className={iconColor} size={24} />
       </div>
-      {trend && (
+      {trend != null && (
         <span className="flex items-center text-green-400 text-xs font-bold">
           <ArrowUpRight size={14} /> {trend}%
         </span>
@@ -129,17 +129,16 @@ const StudentDashboard = () => {
   }
 
   const completed = Array.isArray(tasks) ? tasks.filter((task) => task.status === 'completed').length : 0;
-  const goalProgress = Math.round(
-    (Array.isArray(goalPayload?.goals) ? goalPayload.goals.reduce((sum, item) => sum + Number(item.progress || item.completion_percentage || 0), 0) : 0) /
-      Math.max(Array.isArray(goalPayload?.goals) ? goalPayload.goals.length : 1, 1)
-  );
+  const total = Array.isArray(tasks) ? tasks.length : 0;
+  // Dynamically compute productivity: 0 tasks = 0%, otherwise % of completed tasks
+  const productivityScore = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   return (
     <div className="space-y-6 md:space-y-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <StatCard title="Tasks Completed" value={`${completed} / ${tasks?.length || 0}`} icon={CheckCircle2} color="bg-blue-500" trend={Math.max(progress?.completionRate || 0, 1)} />
-        <StatCard title="Tasks Due Today" value={todayDue} icon={Clock} color="bg-purple-500" />
-        <StatCard title="Productivity Score" value={`${progress?.productivityScore ?? 0}%`} icon={TrendingUp} color="bg-green-500" />
+        <StatCard title="Tasks Completed" value={`${completed} / ${total}`} icon={CheckCircle2} bgColor="bg-blue-500/20" iconColor="text-blue-400" trend={completed > 0 ? Math.round((completed/total)*100) : null} />
+        <StatCard title="Tasks Due Today" value={todayDue} icon={Clock} bgColor="bg-purple-500/20" iconColor="text-purple-400" />
+        <StatCard title="Productivity Score" value={`${productivityScore}%`} icon={TrendingUp} bgColor="bg-green-500/20" iconColor="text-green-400" />
         <div className="glass-card flex flex-col justify-center p-4">
                <h3 className="text-gray-400 text-[10px] md:text-xs font-semibold uppercase tracking-wider mb-2">Join Another Room</h3>
                <form onSubmit={handleJoinClass} className="flex gap-2">
