@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Calendar, CheckCircle2, Circle, User } from 'lucide-react';
+import { Plus, Search, Calendar, CheckCircle2, Circle, User, RotateCcw, Clock, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { createTask, fetchTasks as fetchTasksApi, updateTask, fetchTeacherInsights } from '../services/dashboardService';
 
@@ -252,6 +252,17 @@ const Tasks = ({ isAdmin = false }) => {
                   </div>
                 </div>
                 {task.description && <p className="text-sm text-gray-400 mt-1">{task.description}</p>}
+                
+                {task.status === 'rejected' && !isAdmin && (
+                  <div className="mt-3">
+                    <button 
+                      onClick={() => setProofInputId(task.id)}
+                      className="btn btn-primary bg-red-600 hover:bg-red-700 text-xs px-4 py-2 flex items-center gap-2"
+                    >
+                      <RotateCcw size={14} /> Resubmit Work
+                    </button>
+                  </div>
+                )}
                 
                 {proofInputId === task.id && (
                   <div className="mt-3 flex items-center gap-2">
