@@ -8,6 +8,7 @@ import goalRoutes from './routes/goalRoutes.js';
 import progressRoutes from './routes/progressRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import { supabase } from './config/supabase.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
