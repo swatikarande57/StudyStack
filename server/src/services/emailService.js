@@ -52,22 +52,12 @@ export const sendTeacherWelcome = async (to, name) => {
 };
 
 /**
- * Sends a 6-digit OTP to a teacher's email via Nodemailer + Gmail.
+ * Sends a 6-digit OTP to a teacher's email via Resend API.
  */
 export const sendTeacherOtp = async (to, otp) => {
-  if (!process.env.EMAIL_USER || process.env.EMAIL_USER === 'your_gmail@gmail.com') {
-    throw new Error('Gmail not configured. Add EMAIL_USER and EMAIL_PASS to server/.env and restart the server.');
-  }
-
-  // Create transporter fresh each time to always pick up latest env vars
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-  });
-
-  const info = await transporter.sendMail({
-    from: `"Study-Stack" <${process.env.EMAIL_USER}>`,
-    to,
+  const { data, error } = await resend.emails.send({
+    from: 'Study-Stack <onboarding@resend.dev>',
+    to: [to],
     subject: '🔑 Your Study-Stack Teacher Verification OTP',
     html: `
       <div style="font-family: sans-serif; max-width: 520px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background:#0f172a; color:#f1f5f9">
@@ -79,11 +69,13 @@ export const sendTeacherOtp = async (to, otp) => {
         <div style="text-align:center; margin:32px 0">
           <span style="font-size:48px; font-weight:900; letter-spacing:12px; color:#6366f1">${otp}</span>
         </div>
-        <p style="color:#64748b; font-size:12px; text-align:center">Do not share this code with anyone. If you did not request this, please ignore this email.</p>
+        <p style="color:#64748b; font-size:12px; text-align:center">Do not share this code with anyone.</p>
         <hr style="border:none; border-top:1px solid #1e293b; margin:24px 0">
         <p style="color:#475569; font-size:11px; text-align:center">Study-Stack Virtual Classroom</p>
       </div>
     `,
   });
-  return info;
+
+  if (error) throw new Error(error.message || 'Failed to send OTP email via Resend');
+  return data;
 };
