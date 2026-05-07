@@ -25,10 +25,12 @@ services:
       - key: EMAIL_PASS
         sync: false
 
-staticSites:
   # Frontend Static Site
-  - name: study-stack-client-87
+  - type: web
+    name: study-stack-client-87
+    env: static
     rootDir: client
+    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
