@@ -52,12 +52,24 @@ export const sendTeacherWelcome = async (to, name) => {
 };
 
 /**
- * Sends a 6-digit OTP to a teacher's email via Resend API.
+ * Sends a 6-digit OTP to a teacher's email via Nodemailer + Gmail.
  */
 export const sendTeacherOtp = async (to, otp) => {
-  const { data, error } = await resend.emails.send({
-    from: 'Study-Stack <onboarding@resend.dev>',
-    to: [to],
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    throw new Error('EMAIL_USER and EMAIL_PASS must be set in Render environment variables.');
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: emailUser, pass: emailPass },
+  });
+
+  const info = await transporter.sendMail({
+    from: `"Study-Stack" <${emailUser}>`,
+    to,
     subject: '🔑 Your Study-Stack Teacher Verification OTP',
     html: `
       <div style="font-family: sans-serif; max-width: 520px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background:#0f172a; color:#f1f5f9">
@@ -65,7 +77,7 @@ export const sendTeacherOtp = async (to, otp) => {
           <span style="font-size:32px; font-weight:900; font-style:italic; color:#6366f1">SS</span>
           <h2 style="margin:8px 0; color:#f1f5f9">Teacher Registration OTP</h2>
         </div>
-        <p style="color:#94a3b8; font-size:14px">Use the following one-time password to complete your teacher registration on Study-Stack. This OTP expires in <strong style="color:#f1f5f9">10 minutes</strong>.</p>
+        <p style="color:#94a3b8; font-size:14px">Use the following one-time password to complete your teacher registration. This OTP expires in <strong style="color:#f1f5f9">10 minutes</strong>.</p>
         <div style="text-align:center; margin:32px 0">
           <span style="font-size:48px; font-weight:900; letter-spacing:12px; color:#6366f1">${otp}</span>
         </div>
@@ -75,7 +87,5 @@ export const sendTeacherOtp = async (to, otp) => {
       </div>
     `,
   });
-
-  if (error) throw new Error(error.message || 'Failed to send OTP email via Resend');
-  return data;
+  return info;
 };
