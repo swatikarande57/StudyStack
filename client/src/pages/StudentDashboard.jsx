@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { CheckCircle2, Clock, TrendingUp, Target, ArrowUpRight, Flame, Calendar, UserPlus } from 'lucide-react';
+import { CheckCircle2, Clock, TrendingUp, Target, ArrowUpRight, Flame, Calendar, UserPlus, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { fetchGoals, fetchStudentProgress, fetchTasks } from '../services/dashboardService';
 import { motion } from 'framer-motion';
