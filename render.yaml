@@ -37,7 +37,8 @@ services:
         fromService:
           type: web
           name: study-stack-api-87
-          property: host
+          property: url
+        value: ${VITE_API_BASE_URL}/api
     routes:
       - type: rewrite
         source: /*
