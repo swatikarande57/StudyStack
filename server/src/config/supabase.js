@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import ws from 'ws';
 
 dotenv.config();
 
@@ -10,4 +11,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('ERROR: SUPABASE_URL or SUPABASE_ANON_KEY is missing in server/.env');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false // Recommended for server-side
+  },
+  realtime: {
+    transport: ws // Fix for Node.js environments without native WebSockets
+  }
+});
